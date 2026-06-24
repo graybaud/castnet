@@ -1,8 +1,8 @@
 """
-Tests unitaires du domaine metier.
+Unit tests for the domain layer.
 
-AUCUN import de transformers, datasets, ou torch.nn.
-Uniquement torch.Tensor et les strategies du domaine.
+NO imports from transformers, datasets, or torch.nn.
+Only torch.Tensor and domain strategies.
 """
 
 import torch
@@ -20,7 +20,7 @@ from domain.scoring.masks import apply_percentile_mask, count_sparsity
 
 
 # ---------------------------------------------------------------------------
-# Faux fournisseurs (mocks)
+# Mock providers
 # ---------------------------------------------------------------------------
 
 class FakeWeightProvider(WeightProvider):
@@ -67,7 +67,7 @@ class FakeActivationProvider(ActivationProvider):
 
 
 # ---------------------------------------------------------------------------
-# Tests Magnitude
+# Magnitude
 # ---------------------------------------------------------------------------
 
 class TestMagnitudeStrategy:
@@ -96,7 +96,7 @@ class TestMagnitudeStrategy:
 
 
 # ---------------------------------------------------------------------------
-# Tests Gradient
+# Gradient
 # ---------------------------------------------------------------------------
 
 class TestGradientStrategy:
@@ -112,9 +112,7 @@ class TestGradientStrategy:
 
         assert scores.shape == (2, 2)
         assert scores.max() == 1.0
-        # Verifier que le max est bien en bas a droite (3.0 * 0.5 = 1.5, normalise a 1.0)
         assert scores[1, 1] == 1.0
-        # Verifier que le min est bien en haut a gauche (1.0 * 0.5 = 0.5, normalise a 0.25)
         assert torch.allclose(scores[0, 0], torch.tensor(0.25), atol=0.01)
 
     def test_no_gradient_raises(self):
@@ -123,12 +121,12 @@ class TestGradientStrategy:
         weights = FakeWeightProvider(W, grad=None)
         activations = FakeActivationProvider(None)
 
-        with pytest.raises(ValueError, match="Pas de gradient"):
+        with pytest.raises(ValueError, match="No gradient available"):
             strategy.calculate(weights, activations, "test")
 
 
 # ---------------------------------------------------------------------------
-# Tests Wanda
+# Wanda
 # ---------------------------------------------------------------------------
 
 class TestWandaStrategy:
@@ -160,7 +158,7 @@ class TestWandaStrategy:
 
 
 # ---------------------------------------------------------------------------
-# Tests GPS
+# GPS
 # ---------------------------------------------------------------------------
 
 class TestGPSStrategy:
@@ -178,12 +176,11 @@ class TestGPSStrategy:
         assert scores.shape == (4, 6)
         assert (scores >= 0).all()
         assert not torch.isnan(scores).any()
-        # Apres normalisation, le max doit etre 1.0
         assert torch.allclose(scores.max(), torch.tensor(1.0))
 
 
 # ---------------------------------------------------------------------------
-# Tests Registre
+# Registry
 # ---------------------------------------------------------------------------
 
 class TestRegistry:
@@ -199,12 +196,12 @@ class TestRegistry:
         assert isinstance(get_strategy("wanda"), WandaStrategy)
 
     def test_get_strategy_unknown_raises(self):
-        with pytest.raises(ValueError, match="Strategie inconnue"):
-            get_strategy("methode_imaginaire")
+        with pytest.raises(ValueError, match="Unknown strategy"):
+            get_strategy("imaginary_method")
 
 
 # ---------------------------------------------------------------------------
-# Tests Masques
+# Masks
 # ---------------------------------------------------------------------------
 
 class TestMasks:
@@ -238,7 +235,7 @@ class TestMasks:
 
 
 # ---------------------------------------------------------------------------
-# Test parametrique : toutes les strategies
+# Parametric: all strategies
 # ---------------------------------------------------------------------------
 
 class TestAllStrategiesIntegration:

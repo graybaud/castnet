@@ -1,4 +1,4 @@
-"""Domain Scoring — API publique."""
+"""Domain Scoring — Public API."""
 
 from domain.scoring.ports import (
     WeightProvider,

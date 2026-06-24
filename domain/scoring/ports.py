@@ -1,8 +1,8 @@
 """
-Ports — Interfaces définies dans le domaine métier.
+Ports — Interfaces defined in the domain layer.
 
-L'infrastructure DOIT implémenter ces interfaces.
-Le domaine ne dépend QUE de ces abstractions.
+Infrastructure MUST implement these interfaces.
+Domain depends ONLY on these abstractions.
 """
 
 from abc import ABC, abstractmethod
@@ -12,74 +12,74 @@ from torch import Tensor
 
 
 class WeightProvider(ABC):
-    """Port — Fournit les poids d'un modele, couche par couche."""
+    """Port — Provides model weights, layer by layer."""
 
     @abstractmethod
     def get_weight(self, layer_name: str) -> Tensor:
-        """Retourne la matrice de poids W [d_out, d_in]."""
+        """Returns weight matrix W [d_out, d_in]."""
         ...
 
     @abstractmethod
     def get_bias(self, layer_name: str) -> Tensor | None:
-        """Retourne le biais [d_out], ou None."""
+        """Returns bias vector [d_out], or None."""
         ...
 
     @abstractmethod
     def get_gradient(self, layer_name: str) -> Tensor | None:
-        """Retourne le gradient accumule [d_out, d_in], ou None."""
+        """Returns accumulated gradient [d_out, d_in], or None."""
         ...
 
     @abstractmethod
     def layer_names(self) -> list[str]:
-        """Liste toutes les couches eligibles au scoring."""
+        """Lists all layers eligible for scoring."""
         ...
 
     @abstractmethod
     def forward_backward(self, batch: Tensor) -> float:
-        """Forward + backward sur un batch. Retourne la loss."""
+        """Forward + backward on a batch. Returns loss."""
         ...
 
     @abstractmethod
     def zero_grad(self) -> None:
-        """Remet les gradients a zero."""
+        """Resets gradients to zero."""
         ...
 
 
 class ActivationProvider(ABC):
-    """Port — Fournit les activations collectees pendant le forward."""
+    """Port — Provides activations collected during forward pass."""
 
     @abstractmethod
     def get_input_activations(self, layer_name: str) -> Tensor:
-        """Activations d'entree X pour une couche [N, d_in]."""
+        """Input activations X for a layer [N, d_in]."""
         ...
 
     @abstractmethod
     def get_output_activations(self, layer_name: str) -> Tensor:
-        """Activations de sortie pour une couche [N, d_out]."""
+        """Output activations for a layer [N, d_out]."""
         ...
 
     @abstractmethod
     def attach(self) -> None:
-        """Enregistre les hooks sur toutes les couches."""
+        """Registers hooks on all target layers."""
         ...
 
     @abstractmethod
     def detach(self) -> None:
-        """Supprime tous les hooks."""
+        """Removes all hooks."""
         ...
 
 
 class BatchProvider(ABC):
-    """Port — Fournit des batches de tokens calibres."""
+    """Port — Provides calibrated token batches."""
 
     @abstractmethod
     def get_batches(self, num_batches: int, batch_size: int = 1) -> Iterator[Tensor]:
-        """Itere sur des batches de tokens [B, S]."""
+        """Iterates over token batches [B, S]."""
         ...
 
 
 class ScorePersister(ABC):
-    """Port — Sauvegarde et charge les scores."""
+    """Port — Saves and loads scores."""
 
     @abstractmethod
     def save(self, scores: dict[str, Tensor], path: str) -> None:
@@ -91,7 +91,7 @@ class ScorePersister(ABC):
 
 
 class MaskPersister(ABC):
-    """Port — Sauvegarde et charge les masques binaires."""
+    """Port — Saves and loads binary masks."""
 
     @abstractmethod
     def save(self, masks: dict[str, Tensor], path: str) -> None:

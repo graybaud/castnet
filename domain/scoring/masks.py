@@ -1,11 +1,11 @@
-"""Generation de masques binaires — Metier pur."""
+"""Binary mask generation — Pure domain logic."""
 
 import torch
 from torch import Tensor
 
 
 def apply_percentile_mask(scores: Tensor, keep_fraction: float) -> Tensor:
-    """Masque binaire gardant le top keep_fraction des scores."""
+    """Binary mask keeping the top keep_fraction of scores."""
     nonzero = scores[scores > 0].flatten()
     if len(nonzero) == 0:
         return torch.zeros_like(scores)
@@ -24,14 +24,14 @@ def apply_masks_to_weights(
     masks: dict[str, Tensor],
     weight_provider,
 ) -> None:
-    """Applique les masques aux poids (multiplication in-place)."""
+    """Applies masks to weights (in-place multiplication)."""
     for name, mask in masks.items():
         W = weight_provider.get_weight(name)
         W.data *= mask.to(W.dtype)
 
 
 def count_sparsity(masks: dict[str, Tensor]) -> dict:
-    """Calcule la sparsite globale et par couche."""
+    """Computes overall and per-layer sparsity."""
     total_active = 0
     total_conn = 0
     per_layer = {}
