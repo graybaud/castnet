@@ -1,17 +1,28 @@
 # CastNet — Full pipeline configuration
-defaults:
-  - extract: extract
-  - masks: masks
-  - finetune: finetune
-
 model: "microsoft/phi-2"
 device: "cuda"
 
 # Pipeline steps
 run_extract: true
 run_masks: true
-run_finetune: true
+run_finetune: false
 run_evaluate: true
+
+# Extraction settings
+extract:
+  method: "wanda"
+  num_batches: 200
+  max_len: 128
+
+# Mask settings
+masks:
+  keep_fraction: 0.3
+
+# Finetune settings
+finetune:
+  epochs: 5
+  batches_per_epoch: 200
+  learning_rate: 0.0001
 
 # Paths
 scores_path: "reports/scores.safetensors"

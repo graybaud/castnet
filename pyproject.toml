@@ -28,3 +28,7 @@ dev = [
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning:transformers.*",
+    "ignore::UserWarning:huggingface_hub.*",
+]
