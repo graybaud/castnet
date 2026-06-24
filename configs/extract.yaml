@@ -1,0 +1,7 @@
+# CastNet — Extraction configuration
+model: "microsoft/phi-2"
+method: "wanda"          # magnitude | gradient | wanda | gps
+device: "cuda"
+max_len: 128
+num_batches: 200
+output: "reports/scores.safetensors"

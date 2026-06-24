@@ -1,0 +1,4 @@
+# CastNet — Mask generation configuration
+scores_path: "reports/scores.safetensors"
+output: "reports/masks.safetensors"
+keep_fraction: 0.3

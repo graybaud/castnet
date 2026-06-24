@@ -1,0 +1,19 @@
+# CastNet — Full pipeline configuration
+defaults:
+  - extract: extract
+  - masks: masks
+  - finetune: finetune
+
+model: "microsoft/phi-2"
+device: "cuda"
+
+# Pipeline steps
+run_extract: true
+run_masks: true
+run_finetune: true
+run_evaluate: true
+
+# Paths
+scores_path: "reports/scores.safetensors"
+masks_path: "reports/masks.safetensors"
+checkpoint_path: "checkpoints/finetuned.safetensors"

@@ -1,0 +1,9 @@
+# CastNet — Fine-tuning configuration
+model: "microsoft/phi-2"
+mask_path: "reports/masks.safetensors"
+output: "checkpoints/finetuned.safetensors"
+device: "cuda"
+max_len: 128
+epochs: 5
+batches_per_epoch: 200
+learning_rate: 0.0001
