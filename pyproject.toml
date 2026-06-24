@@ -32,3 +32,11 @@ filterwarnings = [
     "ignore::DeprecationWarning:transformers.*",
     "ignore::UserWarning:huggingface_hub.*",
 ]
+
+[tool.taskipy.tasks]
+clean = "find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null; find . -type f -name '*.pyc' -delete; find . -type d -name '.pytest_cache' -exec rm -rf {} +; find . -type d -name 'htmlcov' -exec rm -rf {} +; find . -type f -name '.coverage' -delete; echo Done"
+test = "pytest tests/ -v"
+test-unit = "pytest tests/unit/ -v"
+test-int = "pytest tests/integration/ -v"
+coverage = "pytest tests/ --cov=. --cov-report=term-missing --cov-report=html"
+install = "pip install -e '.[dev]'"
