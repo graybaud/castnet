@@ -54,8 +54,8 @@ class WandaStrategy(ScoringStrategy):
     def calculate(self, weights, activations, layer_name):
         W = weights.get_weight(layer_name)
         X = activations.get_input_activations(layer_name)
-        X_norm = X.norm(p=2, dim=0)  # [d_in]
-        scores = W.abs() * X_norm.unsqueeze(0)  # [d_out, d_in]
+        X_norm = X.norm(p=2, dim=0)
+        scores = W.abs() * X_norm.unsqueeze(0)
         s_max = scores.max()
         return scores / s_max if s_max > 0 else scores
 
@@ -68,15 +68,12 @@ class GPSStrategy(ScoringStrategy):
         X_in = activations.get_input_activations(layer_name)
         X_out = activations.get_output_activations(layer_name)
 
-        # Direction: max/mean per neuron
         W_abs = W.abs()
         direction = W_abs.max(dim=1).values / (W_abs.mean(dim=1) + 1e-8)
 
-        # Selectivity: var/mean of projected activations
         acts = X_in @ W.T
         selectivity = acts.var(dim=0) / (acts.mean(dim=0) + 1e-8)
 
-        # Distortion: contribution norm / output norm
         bias = weights.get_bias(layer_name)
         contrib = (X_in @ W.T) + (bias if bias is not None else 0)
         contrib = contrib.relu()
@@ -89,13 +86,25 @@ class GPSStrategy(ScoringStrategy):
         return scores / s_max if s_max > 0 else scores
 
 
-# Registry
-STRATEGY_REGISTRY = {
+# Built-in strategies (codées en dur, rapides)
+BUILTIN_STRATEGIES = {
     "magnitude": MagnitudeStrategy,
     "gradient": GradientStrategy,
     "wanda": WandaStrategy,
     "gps": GPSStrategy,
 }
+
+# APL strategies (utilisent apl-pruning)
+from domain.scoring.apl_strategies import APLFormulaStrategy, APL_FORMULAS
+
+APL_STRATEGIES = {
+    name: lambda f=formula: APLFormulaStrategy(f)
+    for name, formula in APL_FORMULAS.items()
+    if name not in BUILTIN_STRATEGIES
+}
+
+# Registry complet
+STRATEGY_REGISTRY = {**BUILTIN_STRATEGIES, **APL_STRATEGIES}
 
 
 def get_strategy(name: str) -> ScoringStrategy:
