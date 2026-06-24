@@ -164,9 +164,10 @@ class TestWandaStrategy:
 class TestGPSStrategy:
 
     def test_basic(self):
-        W = torch.randn(4, 6)
-        X_in = torch.randn(50, 6)
-        X_out = torch.randn(50, 4)
+        # Use positive values so relu() and division dont kill everything
+        W = torch.rand(4, 6) + 0.1
+        X_in = torch.rand(50, 6) + 0.1
+        X_out = torch.rand(50, 4) + 0.1
         strategy = GPSStrategy()
         weights = FakeWeightProvider(W)
         activations = FakeActivationProvider(X_in, X_out)

@@ -6,8 +6,10 @@ from apl_pruning import MiniAPLParser
 from domain.scoring.ports import WeightProvider, ActivationProvider
 
 
-def _to_numpy(tensor: torch.Tensor) -> np.ndarray:
-    """Convert torch tensor to numpy float32."""
+def _to_numpy(tensor: torch.Tensor | None) -> np.ndarray | None:
+    """Convert torch tensor to numpy float32. Returns None if tensor is None."""
+    if tensor is None:
+        return None
     return tensor.detach().float().cpu().numpy()
 
 
@@ -31,12 +33,21 @@ class APLScoringBridge:
     ) -> torch.Tensor:
         """Extract variables from providers, evaluate APL formula."""
         W = _to_numpy(weights.get_weight(layer_name))
-        X_in = _to_numpy(activations.get_input_activations(layer_name))
-        X_out = _to_numpy(activations.get_output_activations(layer_name))
+        
+        X_in = activations.get_input_activations(layer_name)
+        X_in_np = _to_numpy(X_in)
+        
+        X_out = activations.get_output_activations(layer_name)
+        X_out_np = _to_numpy(X_out)
+        
         grad = weights.get_gradient(layer_name)
-        grad_np = _to_numpy(grad) if grad is not None else None
+        grad_np = _to_numpy(grad)
 
-        variables = {"W": W, "act": X_in, "act_out": X_out}
+        variables = {"W": W}
+        if X_in_np is not None:
+            variables["act"] = X_in_np
+        if X_out_np is not None:
+            variables["act_out"] = X_out_np
         if grad_np is not None:
             variables["grad"] = grad_np
 
