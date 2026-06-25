@@ -5,6 +5,7 @@ from omegaconf import DictConfig
 import torch
 
 from domain.scoring.strategies import get_strategy
+from infrastructure.scoring.apl_bridge import APLScoringBridge
 from infrastructure.models.huggingface import HuggingFaceWeightProvider
 from infrastructure.data.providers import WikiTextProvider
 from infrastructure.hooks.activation_collector import ActivationCollector
@@ -28,17 +29,14 @@ def main(cfg: DictConfig):
     model = HuggingFaceWeightProvider(cfg.model, device)
     dataset = WikiTextProvider(cfg.model, cfg.max_len)
 
-    real_names = list(dict(model._model.named_modules()).keys())
-    ffn_names = [
-        n for n in real_names
-        if any(p in n.lower() for p in HuggingFaceWeightProvider.FFN_PATTERNS)
-    ]
+    ffn_names = model.get_ffn_layer_names()
     collector = ActivationCollector(model._model, ffn_names)
     score_persister = SafetensorsScorePersister()
     mask_persister = SafetensorsMaskPersister()
 
     # Use cases
-    strategy = get_strategy(cfg.extract.method)
+    apl_bridge = APLScoringBridge(cfg.extract.method)
+    strategy = get_strategy(cfg.extract.method, apl_bridge=apl_bridge)
 
     extract_uc = ExtractScoresUseCase(strategy, model, dataset, collector, score_persister)
     mask_uc = GenerateMasksUseCase(score_persister, mask_persister)

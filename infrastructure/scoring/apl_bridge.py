@@ -3,7 +3,7 @@
 import torch
 import numpy as np
 from apl_pruning import MiniAPLParser
-from domain.scoring.ports import WeightProvider, ActivationProvider
+from domain.scoring.ports import WeightProvider, ActivationProvider, APLScoringPort
 
 
 def _to_numpy(tensor: torch.Tensor | None) -> np.ndarray | None:
@@ -18,7 +18,7 @@ def _to_torch(array: np.ndarray) -> torch.Tensor:
     return torch.from_numpy(np.asarray(array)).float()
 
 
-class APLScoringBridge:
+class APLScoringBridge(APLScoringPort):
     """Evaluates APL formulas against WeightProvider and ActivationProvider."""
 
     def __init__(self, formula: str):

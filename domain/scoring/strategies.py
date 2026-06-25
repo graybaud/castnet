@@ -111,10 +111,18 @@ APL_STRATEGIES = {
 STRATEGY_REGISTRY = {**BUILTIN_STRATEGIES, **APL_STRATEGIES}
 
 
-def get_strategy(name: str) -> ScoringStrategy:
-    """Scoring strategy factory."""
+def get_strategy(name: str, apl_bridge=None) -> ScoringStrategy:
+    """Scoring strategy factory.
+    
+    Args:
+        name: Strategy name (e.g., 'wanda', 'gps_cube')
+        apl_bridge: APLScoringPort instance (required for APL strategies)
+    """
     if name not in STRATEGY_REGISTRY:
         raise ValueError(
             f"Unknown strategy '{name}'. Available: {list(STRATEGY_REGISTRY)}"
         )
-    return STRATEGY_REGISTRY[name]()
+    strategy = STRATEGY_REGISTRY[name]()
+    if hasattr(strategy, 'set_bridge') and apl_bridge is not None:
+        strategy.set_bridge(apl_bridge)
+    return strategy

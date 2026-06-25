@@ -5,6 +5,7 @@ from omegaconf import DictConfig
 import torch
 
 from domain.scoring.strategies import get_strategy
+from infrastructure.scoring.apl_bridge import APLScoringBridge
 from infrastructure.models.huggingface import HuggingFaceWeightProvider
 from infrastructure.data.cached_provider import CachedWikiTextProvider
 from infrastructure.hooks.activation_collector import ActivationCollector
@@ -26,7 +27,9 @@ def main(cfg: DictConfig):
     persister = SafetensorsScorePersister()
 
     # Domain
-    strategy = get_strategy(cfg.method)
+    # Create APL bridge for APL strategies
+    apl_bridge = APLScoringBridge(cfg.method)
+    strategy = get_strategy(cfg.method, apl_bridge=apl_bridge)
 
     # Application
     use_case = ExtractScoresUseCase(

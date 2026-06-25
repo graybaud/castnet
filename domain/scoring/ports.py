@@ -100,3 +100,13 @@ class MaskPersister(ABC):
     @abstractmethod
     def load(self, path: str) -> dict[str, Tensor]:
         ...
+
+class APLScoringPort(ABC):
+    """Port — Evaluates APL formulas against weight/activation providers."""
+
+    @abstractmethod
+    def calculate(self, weights: WeightProvider, activations: ActivationProvider,
+                  layer_name: str) -> "torch.Tensor":
+        """Compute scores for a layer using an APL formula."""
+        ...
+

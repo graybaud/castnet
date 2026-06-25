@@ -41,5 +41,6 @@ class TestIsFFNLayer:
     def test_ffn_patterns_completeness(self):
         """Ensure all expected patterns are present."""
         expected = {'fc1', 'fc2', 'c_fc', 'c_proj', 'gate_proj',
-                     'up_proj', 'down_proj', 'dense_h_to_4h', 'dense_4h_to_h'}
+                     'up_proj', 'down_proj', 'dense_h_to_4h', 'dense_4h_to_h',
+                     'mlp.fc1', 'mlp.fc2', 'mlp.c_fc', 'mlp.c_proj'}
         assert set(FFN_PATTERNS) == expected

@@ -49,26 +49,42 @@ def count_sparsity(masks: dict[str, Tensor]) -> dict:
     }
 
 
-def measure_sparsity(model) -> tuple:
-    """Count nodes, edges, total connections, and sparsity % in FFN layers.
+def measure_sparsity_from_weights(weights: dict) -> tuple:
+    """Count nodes, edges, total connections, and sparsity % from weight dict.
 
-    Kept for backward compatibility with legacy tests.
-    Uses the same logic as the original src/evaluation/sparsity.py.
+    Pure domain — takes a dict of layer_name -> weight_tensor.
+    No dependency on PyTorch nn.Module or infrastructure.
     """
-    import torch.nn as nn
-    from infrastructure.models.huggingface import HuggingFaceWeightProvider
+    from domain.constants import is_ffn_layer
 
     nodes, edges, total = 0, 0, 0
-    for name, module in model.named_modules():
-        if isinstance(module, nn.Linear):
-            name_lower = name.lower()
-            if any(p in name_lower for p in HuggingFaceWeightProvider.FFN_PATTERNS):
-                w = module.weight.data
-                nodes += w.shape[0] + w.shape[1]
-                edges += (w != 0).sum().item()
-                total += w.numel()
+    for name, W in weights.items():
+        if not is_ffn_layer(name):
+            continue
+        if W.dim() != 2:
+            continue
+        nodes += W.shape[0] + W.shape[1]
+        edges += (W != 0).sum().item()
+        total += W.numel()
     sp = (1 - edges / total) * 100 if total > 0 else 0
     return nodes, edges, total, sp
+
+
+# Backward compatibility wrapper — use measure_sparsity_from_weights instead
+def measure_sparsity(model) -> tuple:
+    """DEPRECATED: Use measure_sparsity_from_weights() instead.
+    
+    Kept only for legacy test compatibility. Extracts weights from model
+    using nn.Module interface, then delegates to the pure function.
+    """
+    import torch.nn as nn
+    from domain.constants import is_ffn_layer
+
+    weights = {}
+    for name, module in model.named_modules():
+        if isinstance(module, nn.Linear) and is_ffn_layer(name):
+            weights[name] = module.weight.data
+    return measure_sparsity_from_weights(weights)
 
 
 def normalize_scores(score_accum, num_batches, needs_batch_div=True):

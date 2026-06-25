@@ -30,6 +30,10 @@ from domain.hardware.thermal import (
     estimate_thermal,
     thermal_sweep,
 )
+from domain.hardware.neuromorphic import (
+    compare_castnet,
+    EXISTING_CHIPS,
+)
 from domain.hardware.routing import (
     rents_rule,
     wire_length_distribution,
@@ -69,4 +73,7 @@ __all__ = [
     "wire_length_distribution",
     "estimate_congestion_overhead",
     "estimate_with_congestion",
+    # Neuromorphic
+    "compare_castnet",
+    "EXISTING_CHIPS",
 ]

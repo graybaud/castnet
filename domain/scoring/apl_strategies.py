@@ -3,14 +3,15 @@
 import torch
 from torch import Tensor
 from domain.scoring.strategies import ScoringStrategy
-from infrastructure.scoring.apl_bridge import APLScoringBridge
+from domain.scoring.ports import APLScoringPort
 
 
 class APLFormulaStrategy(ScoringStrategy):
     """Generic strategy driven by an APL formula string."""
 
     def __init__(self, formula: str):
-        self.bridge = APLScoringBridge(formula)
+        self.bridge = None  # Injected by orchestration
+        self.formula = formula
         self.needs_grad = self._detect_needs_grad(formula)
 
     def _detect_needs_grad(self, formula: str) -> bool:
@@ -20,7 +21,13 @@ class APLFormulaStrategy(ScoringStrategy):
                         "union_wanda_grad", "gradient_x_distortion"]
         return any(kw in formula for kw in grad_keywords)
 
+    def set_bridge(self, bridge: APLScoringPort) -> None:
+        """Inject the APL scoring bridge (called by orchestration)."""
+        self.bridge = bridge
+
     def calculate(self, weights, activations, layer_name) -> Tensor:
+        if self.bridge is None:
+            raise RuntimeError("APL bridge not injected. Call set_bridge() first.")
         scores = self.bridge.calculate(weights, activations, layer_name)
         s_max = scores.max()
         return scores / s_max if s_max > 0 else scores

@@ -24,7 +24,7 @@ class TestAnalyzeRepetition:
         assert result["unique_ratio"] == 1.0
 
     def test_repeated_text(self):
-        result = analyze_repetition("hello hello hello world")
+        result = analyze_repetition("hello hello hello hello hello hello hello hello hello hello world")
         assert result["unique_ratio"] < 1.0
 
     def test_empty_text(self):

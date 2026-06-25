@@ -6,6 +6,7 @@ import numpy as np
 from domain.scoring.ports import WeightProvider, ActivationProvider
 from domain.scoring.apl_strategies import APLFormulaStrategy
 from infrastructure.scoring.apl_bridge import APLScoringBridge
+from domain.scoring.ports import APLScoringPort
 
 
 class FakeWeightProvider(WeightProvider):
@@ -77,11 +78,19 @@ class TestAPLScoringBridge:
 # New strategies
 # =============================================================================
 
+def _make_apl_strategy(formula: str):
+    """Helper: create APL strategy with bridge injected."""
+    from domain.scoring.apl_strategies import APLFormulaStrategy
+    strategy = APLFormulaStrategy(formula)
+    strategy.set_bridge(APLScoringBridge(formula))
+    return strategy
+
+
 class TestNewStrategies:
 
     def test_q30_weighted(self):
         W = torch.randn(5, 10)
-        strategy = APLFormulaStrategy("q30_weighted")
+        strategy = _make_apl_strategy("q30_weighted")
         scores = strategy.calculate(FakeWeightProvider(W), FakeActivationProvider(torch.randn(50, 10)), "test")
         # Q30 returns per-neuron scores, expanded to matrix by strategy
         assert scores.shape == (5, 10) or scores.ndim == 1
@@ -90,7 +99,7 @@ class TestNewStrategies:
 
     def test_q30_count(self):
         W = torch.tensor([[0.2, 0.05, 0.3], [0.01, 0.02, 0.03]])
-        strategy = APLFormulaStrategy("q30_count")
+        strategy = _make_apl_strategy("q30_count")
         scores = strategy.calculate(FakeWeightProvider(W), FakeActivationProvider(torch.randn(10, 3)), "test")
         # count returns scalar or per-neuron
         assert scores.ndim <= 2
@@ -98,7 +107,7 @@ class TestNewStrategies:
     def test_direction_standalone(self):
         W = torch.tensor([[1.0, 1.0], [1.0, 5.0]])
         # Use the APL formula name directly
-        strategy = APLFormulaStrategy("direction_standalone")
+        strategy = _make_apl_strategy("direction_standalone")
         scores = strategy.calculate(FakeWeightProvider(W), FakeActivationProvider(torch.randn(10, 2)), "test")
         # direction_per_neuron returns per-neuron scores, expanded by strategy
         assert scores.ndim >= 1
@@ -107,7 +116,7 @@ class TestNewStrategies:
     def test_selectivity_standalone(self):
         W = torch.randn(3, 5)
         X = torch.randn(50, 5)
-        strategy = APLFormulaStrategy("selectivity_standalone")
+        strategy = _make_apl_strategy("selectivity_standalone")
         scores = strategy.calculate(FakeWeightProvider(W), FakeActivationProvider(X), "test")
         # selectivity returns scalar or 1D, expanded by strategy
 
@@ -118,11 +127,11 @@ class TestNewStrategies:
         bridge = APLScoringBridge("wanda_x_distortion")
         # This requires distortion variable — currently will fail gracefully
         # For now test that the strategy can be instantiated
-        strategy = APLFormulaStrategy("wanda_x_distortion")
+        strategy = _make_apl_strategy("wanda_x_distortion")
         assert strategy is not None
 
     def test_gradient_x_distortion(self):
-        strategy = APLFormulaStrategy("gradient_x_distortion")
+        strategy = _make_apl_strategy("gradient_x_distortion")
         assert strategy is not None
 
 
@@ -190,7 +199,7 @@ class TestNormalizationInvariants:
     def test_output_in_01(self):
         W = torch.randn(5, 10)
         X = torch.randn(50, 10)
-        strategy = APLFormulaStrategy("|W| x mean(|act|)")
+        strategy = _make_apl_strategy("|W| x mean(|act|)")
         scores = strategy.calculate(FakeWeightProvider(W), FakeActivationProvider(X), "test")
         assert scores.min() >= 0.0
         assert scores.max() <= 1.0 + 1e-6
@@ -198,13 +207,13 @@ class TestNormalizationInvariants:
     def test_max_is_one(self):
         W = torch.randn(5, 10).abs() + 0.1
         X = torch.randn(50, 10).abs() + 0.1
-        strategy = APLFormulaStrategy("|W| x mean(|act|)")
+        strategy = _make_apl_strategy("|W| x mean(|act|)")
         scores = strategy.calculate(FakeWeightProvider(W), FakeActivationProvider(X), "test")
         assert torch.allclose(scores.max(), torch.tensor(1.0))
 
     def test_magnitude_matches_builtin(self):
         from domain.scoring.strategies import MagnitudeStrategy
         W = torch.randn(5, 10)
-        apl = APLFormulaStrategy("|W|").calculate(FakeWeightProvider(W), FakeActivationProvider(torch.zeros(1,10)), "test")
+        apl = _make_apl_strategy("|W|").calculate(FakeWeightProvider(W), FakeActivationProvider(torch.zeros(1,10)), "test")
         manual = MagnitudeStrategy().calculate(FakeWeightProvider(W), FakeActivationProvider(torch.zeros(1,10)), "test")
         assert torch.allclose(apl, manual, atol=0.01)

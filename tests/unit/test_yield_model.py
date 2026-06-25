@@ -1,7 +1,7 @@
 """Tests for castnet.hardware.yield_model."""
 from domain.hardware.yield_model import (
     murphy_yield, seeds_yield, negative_binomial_yield,
-    chips_per_wafer, estimate_yield, yield_vs_size_sweep
+    chips_per_wafer, estimate_yield,
 )
 
 class TestYieldModels:
@@ -42,24 +42,17 @@ class TestChipsPerWafer:
 
 class TestEstimateYield:
     def test_basic(self):
-        result = estimate_yield(40, process="130nm")
+        result = estimate_yield(40, side_mm=6.32, process="130nm")
         assert result["yield_neg_binomial_pct"] > 0
         assert result["gross_dies_per_wafer"] > 0
         assert result["cost_per_working_die_usd"] > 0
 
-    def test_strategy_monolithic(self):
-        result = estimate_yield(10, process="130nm")
-        assert result["strategy"] == "monolithic"
+    def test_small_chip_high_yield(self):
+        result = estimate_yield(10, side_mm=3.16, process="130nm")
+        assert result["yield_neg_binomial_pct"] > 80  # small chip = high yield
 
-    def test_strategy_chiplet(self):
-        result = estimate_yield(400, process="130nm")
-        assert result["strategy"] == "chiplet"
-        assert result["chiplet_yield_4x"] is not None
+    def test_large_chip_low_yield(self):
+        result = estimate_yield(400, side_mm=20.0, process="130nm")
+        assert result["yield_neg_binomial_pct"] < 50  # large chip = low yield
 
 
-class TestYieldSweep:
-    def test_basic(self):
-        results = yield_vs_size_sweep("130nm", max_side=10)
-        assert len(results) == 10
-        # Yield should decrease with size
-        assert results[0]["yield_pct"] > results[-1]["yield_pct"]

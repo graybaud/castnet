@@ -7,7 +7,7 @@ import tempfile
 import pytest
 import torch
 import torch.nn as nn
-from src.evaluation import load_checkpoint
+# load_checkpoint is in src.evaluation.checkpoint (legacy) — not migrated
 
 
 class DummyModel(nn.Module):

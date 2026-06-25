@@ -15,11 +15,7 @@ os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 class HuggingFaceWeightProvider(WeightProvider):
     """Provides weights and gradients from a HuggingFace model."""
 
-    FFN_PATTERNS = [
-        "fc1", "fc2", "c_fc", "c_proj",
-        "gate_proj", "up_proj", "down_proj",
-        "mlp.fc1", "mlp.fc2", "mlp.c_fc", "mlp.c_proj",
-    ]
+    from domain.constants import FFN_PATTERNS
 
     def __init__(self, model_name: str, device: str = "cuda"):
         # Force local files only — no network requests
@@ -74,6 +70,12 @@ class HuggingFaceWeightProvider(WeightProvider):
 
     def layer_names(self) -> list[str]:
         return list(self._ffn_layers.keys())
+
+    def get_ffn_layer_names(self) -> list[str]:
+        """Returns FFN layer names filtered by patterns. Used by orchestration."""
+        from domain.constants import is_ffn_layer
+        all_names = list(dict(self._model.named_modules()).keys())
+        return [n for n in all_names if is_ffn_layer(n)]
 
     def forward_backward(self, batch: torch.Tensor) -> float:
         self.model.zero_grad()

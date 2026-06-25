@@ -1,26 +1,27 @@
 """Scale-free topology exponent (gamma) — Pure domain logic."""
 
 import numpy as np
-import torch.nn as nn
+from domain.constants import is_ffn_layer
 
 
-def measure_gamma(model: nn.Module, threshold: float = 0.0) -> float:
-    """Measure the power-law exponent (gamma) of the degree distribution
-    across all FFN weight matrices in the model.
+def measure_gamma_from_weights(weights: dict) -> float:
+    """Measure the power-law exponent (gamma) of the degree distribution.
 
-    Gamma > 2.0 indicates a scale-free topology (robust to random failures).
+    Args:
+        weights: dict of layer_name -> weight_tensor [d_out, d_in]
+
+    Returns:
+        Gamma exponent (float), or 0.0 if insufficient data.
     """
-    from infrastructure.models.huggingface import HuggingFaceWeightProvider
-    FFN_PATTERNS = HuggingFaceWeightProvider.FFN_PATTERNS
-
     degrees = []
-    for name, param in model.named_parameters():
-        name_lower = name.lower()
-        if any(p in name_lower for p in FFN_PATTERNS) and param.dim() == 2:
-            W = param.detach().float()
-            mask = W.abs() > threshold
-            col_degrees = mask.sum(dim=0).tolist()
-            degrees.extend(col_degrees)
+    for name, W in weights.items():
+        if not is_ffn_layer(name):
+            continue
+        if W.dim() != 2:
+            continue
+        mask = W.abs() > 0.0
+        col_degrees = mask.sum(dim=0).tolist()
+        degrees.extend(col_degrees)
 
     if len(degrees) < 10:
         return 0.0
