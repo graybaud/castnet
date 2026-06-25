@@ -36,6 +36,20 @@ from domain.metrics.benchmark import (
 from domain.metrics.rapid_adapt import compute_adaptation_rate
 from domain.metrics.noise_robust import compute_noise_degradation
 from domain.metrics.relearn_rate import compute_weight_change
+from domain.metrics.lm_eval_tasks import (
+    TASK_REGISTRY,
+    get_task_config,
+    list_available_tasks,
+    compute_mmlu_summary,
+)
+from domain.metrics.neuron_freq import (
+    compute_activation_frequency,
+    compute_activation_frequency_all_layers,
+)
+from domain.metrics.custom_domain import (
+    evaluate_custom_domain,
+    CUSTOM_DOMAIN_QUESTIONS,
+)
 
 __all__ = [
     # Perplexity
@@ -71,4 +85,15 @@ __all__ = [
     "compute_noise_degradation",
     # Relearn rate
     "compute_weight_change",
+    # Downstream tasks
+    "TASK_REGISTRY",
+    "get_task_config",
+    "list_available_tasks",
+    "compute_mmlu_summary",
+    # Neuron frequency
+    "compute_activation_frequency",
+    "compute_activation_frequency_all_layers",
+    # Custom domain
+    "evaluate_custom_domain",
+    "CUSTOM_DOMAIN_QUESTIONS",
 ]
