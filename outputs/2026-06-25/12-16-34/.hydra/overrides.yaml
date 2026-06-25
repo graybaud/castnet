@@ -1,5 +1,0 @@
-- mode=dense
-- model=facebook/opt-125m
-- device=cuda
-- num_batches=10
-- max_len=128

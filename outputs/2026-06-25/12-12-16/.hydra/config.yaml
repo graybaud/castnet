@@ -1,7 +1,0 @@
-model: facebook/opt-125m
-device: cuda
-max_len: 128
-num_batches: 2
-mode: dense
-mask_path: reports/masks.safetensors
-scores_path: reports/scores.safetensors

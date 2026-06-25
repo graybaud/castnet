@@ -20,3 +20,4 @@ models/
 Thumbs.db
 .coverage
 htmlcov/
+outputs/

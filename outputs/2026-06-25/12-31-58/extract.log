@@ -1,6 +1,0 @@
-[2026-06-25 12:31:59,688][httpx][INFO] - HTTP Request: GET https://huggingface.co/api/models/facebook/opt-125m "HTTP/1.1 200 OK"
-[2026-06-25 12:31:59,862][httpx][INFO] - HTTP Request: GET https://huggingface.co/api/models/facebook/opt-125m/commits/main "HTTP/1.1 200 OK"
-[2026-06-25 12:32:00,106][httpx][INFO] - HTTP Request: GET https://huggingface.co/api/models/facebook/opt-125m/discussions?p=0 "HTTP/1.1 200 OK"
-[2026-06-25 12:32:00,298][httpx][INFO] - HTTP Request: GET https://huggingface.co/api/models/facebook/opt-125m/commits/refs%2Fpr%2F51 "HTTP/1.1 200 OK"
-[2026-06-25 12:32:00,455][httpx][INFO] - HTTP Request: HEAD https://huggingface.co/facebook/opt-125m/resolve/refs%2Fpr%2F51/model.safetensors.index.json "HTTP/1.1 404 Not Found"
-[2026-06-25 12:32:00,455][huggingface_hub.utils._http][WARNING] - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.

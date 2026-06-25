@@ -1,6 +1,0 @@
-model: facebook/opt-125m
-method: wanda
-device: cuda
-max_len: 128
-num_batches: 200
-output: reports/opt125m_wanda_b200.safetensors
