@@ -1,0 +1,14 @@
+# CastNet — Evaluation configuration
+model: "facebook/opt-125m"
+device: "cuda"
+max_len: 512
+num_batches: 50
+
+# Mode: dense | perplexity | sweep | compare
+mode: "perplexity"
+
+# Paths (used for perplexity, compare)
+mask_path: "reports/masks.safetensors"
+
+# Paths (used for sweep)
+scores_path: "reports/scores.safetensors"
