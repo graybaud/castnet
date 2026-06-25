@@ -37,3 +37,34 @@ class WikiTextProvider(BatchProvider):
             if ids.size(1) > 1:
                 yield ids
                 count += 1
+
+
+class C4Provider(BatchProvider):
+    """Provides batches from the C4 English dataset."""
+
+    def __init__(self, tokenizer_name: str, max_len: int = 128, streaming: bool = True):
+        from datasets import load_dataset
+        from transformers import AutoTokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        self._max_len = max_len
+        self._dataset = load_dataset(
+            "c4", "en", split="train", streaming=streaming
+        )
+        if streaming:
+            self._dataset = self._dataset.take(1000)
+
+    def get_batches(self, num_batches: int, batch_size: int = 1):
+        count = 0
+        for example in self._dataset:
+            if count >= num_batches:
+                break
+            ids = self.tokenizer.encode(
+                example["text"],
+                truncation=True,
+                max_length=self._max_len,
+                return_tensors="pt",
+            )
+            if ids.size(1) > 1:
+                yield ids
+                count += 1
