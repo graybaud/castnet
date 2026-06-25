@@ -29,12 +29,9 @@ def compute_adaptation_rate(
     final = sum(loss_curve[-window_size:]) / window_size
 
     recent = loss_curve[-window_size:]
-    steps = list(range(len(recent)))
-    slope, _ = torch.polyfit(
-        torch.tensor(steps, dtype=torch.float32),
-        torch.tensor(recent, dtype=torch.float32),
-        1,
-    )
+    import numpy as np
+    steps = np.arange(len(recent))
+    slope, _ = np.polyfit(steps, recent, 1)
 
     return {
         "initial_loss": round(initial, 4),

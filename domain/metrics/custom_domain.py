@@ -63,8 +63,9 @@ def evaluate_custom_domain(
             "correct": is_correct,
         })
 
+    n = len(questions)
     return {
-        "accuracy": correct / len(questions),
+        "accuracy": correct / n if n > 0 else 0.0,
         "n_questions": len(questions),
         "correct": correct,
         "per_question": results,
