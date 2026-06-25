@@ -44,6 +44,13 @@ class APLScoringBridge:
         grad_np = _to_numpy(grad)
 
         variables = {"W": W}
+        
+        # Optional precomputed metrics
+        distortion = getattr(weights, 'get_distortion', None)
+        if distortion is not None:
+            distortion_np = _to_numpy(distortion(layer_name))
+            if distortion_np is not None:
+                variables["distortion"] = distortion_np
         if X_in_np is not None:
             variables["act"] = X_in_np
         if X_out_np is not None:

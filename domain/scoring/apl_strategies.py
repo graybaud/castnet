@@ -84,4 +84,17 @@ APL_FORMULAS = {
     "latency": "latency_score",
     "symmetry": "symmetry_score",
     "fractal": "fractal_score",
+
+    # GPS components standalone
+    "direction_only": "direction_standalone",
+    "selectivity_only": "selectivity_standalone",
+    "distortion_only": "distortion_standalone",
+
+    # Wanda/Gradient x Distortion
+    "wanda_x_distortion": "wanda_x_distortion",
+    "gradient_x_distortion": "gradient_x_distortion",
+
+    # Q30 — Hub scoring
+    "q30_weighted": "q30_weighted",
+    "q30_count": "q30_count",
 }
