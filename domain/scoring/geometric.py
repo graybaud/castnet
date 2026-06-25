@@ -107,3 +107,17 @@ def find_natural_threshold(
         "is_bimodal": peaks >= 2,
         "num_peaks": peaks,
     }
+
+
+def neuron_direction(weight_vector: torch.Tensor) -> float:
+    """Ratio max/mean of absolute weights."""
+    w_abs = weight_vector.float().abs()
+    w_mean = w_abs.mean()
+    return (w_abs.max() / w_mean).item() if w_mean > 0 else 0.0
+
+
+def neuron_selectivity(activations: torch.Tensor) -> float:
+    """Variance/mean of activations."""
+    a = activations.float()
+    mean = a.mean()
+    return (a.var() / mean).item() if mean > 0 else 0.0
