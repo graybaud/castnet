@@ -50,3 +50,24 @@ def count_sparsity(masks: dict[str, Tensor]) -> dict:
         "total_connections": int(total_conn),
         "per_layer": per_layer,
     }
+
+def normalize_scores(score_accum, num_batches, needs_batch_div=True):
+    """Normalize scores to [0, 1] per layer.
+    
+    Args:
+        score_accum: dict of layer_name -> score_tensor
+        num_batches: number of batches used for accumulation
+        needs_batch_div: if True, divide by num_batches before normalizing
+    
+    Returns:
+        Same dict with scores normalized in-place.
+    """
+    for name in score_accum:
+        if needs_batch_div:
+            score_accum[name] = score_accum[name] / num_batches
+        s = score_accum[name]
+        s_max = s.max()
+        if s_max > 0:
+            score_accum[name] = s / s_max
+    return score_accum
+
