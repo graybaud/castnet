@@ -1,4 +1,4 @@
-"""Fournisseurs de donnees — Adaptateurs pour datasets."""
+"""Data providers — Adapters for datasets."""
 
 from typing import Iterator
 import torch
@@ -8,7 +8,7 @@ from domain.scoring.ports import BatchProvider
 
 
 class WikiTextProvider(BatchProvider):
-    """Fournit des batches depuis WikiText-2."""
+    """Provides batches from WikiText-2."""
 
     def __init__(self, tokenizer_name: str, max_len: int = 128):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
@@ -19,7 +19,7 @@ class WikiTextProvider(BatchProvider):
     def _load(self):
         dataset = load_dataset(
             "Salesforce/wikitext", "wikitext-2-raw-v1",
-            split="train", streaming=True,
+            split="train", streaming=False  # ← NO STREAMING
         )
         return dataset.filter(lambda x: len(x["text"].strip()) > 10)
 
