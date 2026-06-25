@@ -31,6 +31,7 @@ class HuggingFaceWeightProvider(WeightProvider):
             local_files_only=True,  # ← NO NETWORK
         )
         self._device = device
+        self.model.train()  # Set training mode once
         self._ffn_layers = self._detect_ffn_layers()
         self._name_map = {n.replace(".", "_"): n for n in self._ffn_layers}
 
@@ -75,7 +76,7 @@ class HuggingFaceWeightProvider(WeightProvider):
         return list(self._ffn_layers.keys())
 
     def forward_backward(self, batch: torch.Tensor) -> float:
-        self.model.train()
+        self.model.zero_grad()
         loss = self.model(batch, labels=batch).loss
         loss.backward()
         return loss.item()

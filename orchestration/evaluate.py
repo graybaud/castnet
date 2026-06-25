@@ -1,24 +1,16 @@
-"""Orchestration — Model evaluation entry point.
-
-Modes:
-  perplexity  — Evaluate perplexity and sparsity for a single mask
-  sweep       — Evaluate perplexity at multiple keep fractions
-  dense       — Evaluate dense baseline perplexity
-  compare     — Compare dense vs sparse
-"""
+"""Orchestration — Model evaluation entry point."""
 
 import hydra
 from omegaconf import DictConfig
+import math
 import torch
+from transformers import AutoTokenizer
+from datasets import load_dataset
 
 from infrastructure.models.huggingface import HuggingFaceWeightProvider
-from infrastructure.data.providers import WikiTextProvider
-from infrastructure.persistence.safetensors_persister import (
-    SafetensorsScorePersister,
-    SafetensorsMaskPersister,
-)
-from application.evaluate import EvaluateUseCase
-from application.sweep import SparsitySweepUseCase
+from infrastructure.persistence.safetensors_persister import SafetensorsMaskPersister
+from domain.scoring.masks import count_sparsity
+from domain.metrics.perplexity import compute_perplexity_from_total
 
 
 @hydra.main(config_path="../configs", config_name="evaluate", version_base=None)
@@ -27,106 +19,74 @@ def main(cfg: DictConfig):
     print(f"Device: {device} | Model: {cfg.model} | Mode: {cfg.mode}")
 
     model = HuggingFaceWeightProvider(cfg.model, device)
-    dataset = WikiTextProvider(cfg.model, cfg.max_len)
+    tokenizer = AutoTokenizer.from_pretrained(cfg.model)
+    tokenizer.pad_token = tokenizer.eos_token
     mask_persister = SafetensorsMaskPersister()
 
+    # Save dense weights once
+    dense_weights = {
+        name: model.get_weight(name).clone()
+        for name in model.layer_names()
+    }
+
+    # Load validation data once
+    dataset = load_dataset('Salesforce/wikitext', 'wikitext-2-raw-v1', split='validation')
+    text = ' '.join([x['text'] for x in dataset if len(x['text'].strip()) > 10])
+    tokens = tokenizer.encode(text, return_tensors='pt')[0]
+
+    def eval_model(mask_path=None):
+        """Evaluate with optional mask. Returns (perplexity, sparsity_pct)."""
+        # Restore dense weights
+        for name, w in dense_weights.items():
+            model.get_weight(name).data.copy_(w)
+
+        sparsity_pct = 0.0
+        if mask_path:
+            masks = mask_persister.load(mask_path)
+            sp = count_sparsity(masks)
+            sparsity_pct = sp['overall_sparsity_pct']
+            for name, mask in masks.items():
+                w = model.get_weight(name)
+                w.data = w.data * mask.to(w.dtype)
+
+        model.model.eval()
+        total_loss, total_tok = 0.0, 0
+        block_size = 512
+        max_tokens = 50000
+
+        with torch.no_grad():
+            for i in range(0, min(len(tokens) - block_size, max_tokens), block_size):
+                block = tokens[i:i + block_size].unsqueeze(0).to(device)
+                out = model.model(block, labels=block)
+                total_loss += out.loss.item() * block_size
+                total_tok += block_size
+
+        perp = compute_perplexity_from_total(total_loss, total_tok)
+        return perp, sparsity_pct
+
     if cfg.mode == "dense":
-        _run_dense(model, dataset, cfg)
+        perp, _ = eval_model()
+        print(f"Dense perplexity: {perp:.1f}")
+
     elif cfg.mode == "perplexity":
-        _run_perplexity(model, dataset, mask_persister, cfg)
-    elif cfg.mode == "sweep":
-        _run_sweep(model, dataset, mask_persister, cfg)
-    elif cfg.mode == "compare":
-        _run_compare(model, dataset, mask_persister, cfg)
+        perp, sp = eval_model(cfg.mask_path)
+        print(f"Perplexity: {perp:.1f} | Sparsity: {sp:.1f}%")
 
-
-def _run_dense(model, dataset, cfg):
-    print("Dense baseline evaluation...")
-    model.model.eval()
-    total_loss, total_tok = 0.0, 0
-    for i, batch in enumerate(dataset.get_batches(cfg.num_batches)):
-        batch = batch.to(model.model.device)
-        with torch.no_grad():
-            out = model.model(batch, labels=batch)
-            loss = out.loss.item()
-        total_loss += loss * batch.numel()
-        total_tok += batch.numel()
-        if (i + 1) % 10 == 0:
-            print(f"  Batch {i+1}/{cfg.num_batches}")
-
-    from domain.metrics.perplexity import compute_perplexity_from_total
-    perp = compute_perplexity_from_total(total_loss, total_tok)
-
-    print(f"\n{'=' * 60}")
-    print(f"  DENSE BASELINE")
-    print(f"  Perplexity : {perp:.1f}")
-    print(f"{'=' * 60}")
-
-
-def _run_perplexity(model, dataset, mask_persister, cfg):
-    use_case = EvaluateUseCase(model, dataset, mask_persister)
-    result = use_case.execute(cfg.mask_path, num_batches=cfg.num_batches)
-
-    print(f"\n{'=' * 60}")
-    print(f"  EVALUATION COMPLETE")
-    print(f"  Perplexity : {result.perplexity:.1f}")
-    print(f"  Sparsity   : {result.sparsity['overall_sparsity_pct']}%")
-    print(f"  Active     : {result.sparsity['total_active']:,} / {result.sparsity['total_connections']:,}")
-    print(f"{'=' * 60}")
-
-
-def _run_sweep(model, dataset, mask_persister, cfg):
-    score_persister = SafetensorsScorePersister()
-    use_case = SparsitySweepUseCase(model, dataset, score_persister, mask_persister)
-    result = use_case.execute(cfg.scores_path, eval_batches=cfg.num_batches)
-
-    print(f"\n{'=' * 60}")
-    print(f"  SWEEP COMPLETE")
-    print(f"  {'keep':<10} {'sparsity':<12} {'perplexity'}")
-    print(f"  {'-' * 34}")
-    for r in sorted(result.results, key=lambda x: x["perplexity"]):
-        print(f"  {r['keep_fraction']:<10.2f} {r['sparsity_pct']:<12.1f} {r['perplexity']:<12.1f}")
-    print(f"{'=' * 60}")
-
-
-def _run_compare(model, dataset, mask_persister, cfg):
-    print("[1/2] Dense baseline...")
-    total_loss, total_tok = 0.0, 0
-    model.model.eval()
-    for i, batch in enumerate(dataset.get_batches(cfg.num_batches)):
-        batch = batch.to(model.model.device)
-        with torch.no_grad():
-            out = model.model(batch, labels=batch)
-            loss = out.loss.item()
-        total_loss += loss * batch.numel()
-        total_tok += batch.numel()
-        if (i + 1) % 10 == 0:
-            print(f"  Batch {i+1}/{cfg.num_batches}")
-
-    from domain.metrics.perplexity import compute_perplexity_from_total
-    perp_dense = compute_perplexity_from_total(total_loss, total_tok)
-
-    print("[2/2] Sparse evaluation...")
-    use_case = EvaluateUseCase(model, dataset, mask_persister)
-    result = use_case.execute(cfg.mask_path, num_batches=cfg.num_batches)
-
-    ratio = result.perplexity / perp_dense if perp_dense > 0 else float("inf")
-    if ratio < 1.5:
-        verdict = "OK (<1.5x)"
-    elif ratio < 3.0:
-        verdict = "Acceptable (<3x)"
-    elif ratio < 5.0:
-        verdict = "Degraded (<5x)"
-    else:
-        verdict = "Broken"
-
-    print(f"\n{'=' * 60}")
-    print(f"  DENSE vs SPARSE COMPARISON")
-    print(f"  Perplexity dense : {perp_dense:.1f}")
-    print(f"  Perplexity sparse: {result.perplexity:.1f}")
-    print(f"  Ratio           : {ratio:.1f}x {verdict}")
-    print(f"  Sparsity        : {result.sparsity['overall_sparsity_pct']}%")
-    print(f"{'=' * 60}")
+    elif cfg.mode == "all":
+        masks_to_eval = [
+            ("Dense", None),
+            ("Wanda", "reports/opt125m_wanda_masks.safetensors"),
+            ("Gradient", "reports/opt125m_gradient_masks.safetensors"),
+            ("GPS", "reports/opt125m_gps_masks.safetensors"),
+            ("Union", "reports/opt125m_union_gps_grad.safetensors"),
+        ]
+        print(f"\n{'='*60}")
+        print(f"  {'Method':<15} {'Sparsity':>10} {'Perplexity':>12}")
+        print(f"  {'-'*45}")
+        for name, mask_path in masks_to_eval:
+            perp, sp = eval_model(mask_path)
+            print(f"  {name:<15} {sp:>9.1f}% {perp:>12.1f}")
+        print(f"{'='*60}")
 
 
 if __name__ == "__main__":

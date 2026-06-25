@@ -27,6 +27,7 @@ class ScoringStrategy(ABC):
 
 class MagnitudeStrategy(ScoringStrategy):
     """|W| — Naive baseline."""
+    needs_grad = False
 
     def calculate(self, weights, activations, layer_name):
         W = weights.get_weight(layer_name)
@@ -37,6 +38,7 @@ class MagnitudeStrategy(ScoringStrategy):
 
 class GradientStrategy(ScoringStrategy):
     """|W| x |grad| — Requires gradients."""
+    needs_grad = True
 
     def calculate(self, weights, activations, layer_name):
         W = weights.get_weight(layer_name)
@@ -50,6 +52,7 @@ class GradientStrategy(ScoringStrategy):
 
 class WandaStrategy(ScoringStrategy):
     """|W| x ||X||_2 — Forward only, state of the art."""
+    needs_grad = False
 
     def calculate(self, weights, activations, layer_name):
         W = weights.get_weight(layer_name)
@@ -62,6 +65,7 @@ class WandaStrategy(ScoringStrategy):
 
 class GPSStrategy(ScoringStrategy):
     """GPS Local — Direction x Selectivity x Distortion."""
+    needs_grad = False
 
     def calculate(self, weights, activations, layer_name):
         W = weights.get_weight(layer_name)

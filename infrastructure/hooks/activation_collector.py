@@ -34,8 +34,8 @@ class ActivationCollector(ActivationProvider):
 
     def _make_hook(self, name: str):
         def hook_fn(module, input, output):
-            x_in = input[0].detach()
-            x_out = output.detach()
+            x_in = input[0].detach().float()
+            x_out = output.detach().float()
             if x_in.dim() == 3:
                 x_in = x_in.reshape(-1, x_in.shape[-1])
             if x_out.dim() == 3:
