@@ -2,7 +2,6 @@
 
 from domain.metrics.perplexity import (
     compute_perplexity_from_loss,
-    compute_perplexity_from_logits,
     compute_perplexity_from_total,
 )
 from domain.metrics.qualitative import (
@@ -52,48 +51,33 @@ from domain.metrics.custom_domain import (
 )
 
 __all__ = [
-    # Perplexity
     "compute_perplexity_from_loss",
-    "compute_perplexity_from_logits",
     "compute_perplexity_from_total",
-    # Qualitative
     "run_greedy_tests",
     "run_sampled_tests",
     "analyze_repetition",
     "QUALITATIVE_PROMPTS",
-    # Dead neurons
     "count_dead_neurons",
     "count_dead_neurons_all_layers",
-    # Weight distribution
     "analyze_weight_distribution",
-    # KL Divergence
     "compute_kl_divergence",
     "compute_kl_divergence_batched",
-    # Top-K Rank
     "topk_overlap",
     "topk_overlap_batched",
-    # Stability
     "compute_stability",
     "DEFAULT_STABILITY_PROMPTS",
-    # Benchmark
     "apply_magnitude_pruning",
     "apply_magnitude_pruning_all_layers",
     "compute_magnitude_benchmark",
-    # Rapid adaptation
     "compute_adaptation_rate",
-    # Noise robustness
     "compute_noise_degradation",
-    # Relearn rate
     "compute_weight_change",
-    # Downstream tasks
     "TASK_REGISTRY",
     "get_task_config",
     "list_available_tasks",
     "compute_mmlu_summary",
-    # Neuron frequency
     "compute_activation_frequency",
     "compute_activation_frequency_all_layers",
-    # Custom domain
     "evaluate_custom_domain",
     "CUSTOM_DOMAIN_QUESTIONS",
 ]
