@@ -28,6 +28,14 @@ from domain.metrics.stability import (
     compute_stability,
     DEFAULT_STABILITY_PROMPTS,
 )
+from domain.metrics.benchmark import (
+    apply_magnitude_pruning,
+    apply_magnitude_pruning_all_layers,
+    compute_magnitude_benchmark,
+)
+from domain.metrics.rapid_adapt import compute_adaptation_rate
+from domain.metrics.noise_robust import compute_noise_degradation
+from domain.metrics.relearn_rate import compute_weight_change
 
 __all__ = [
     # Perplexity
@@ -53,4 +61,14 @@ __all__ = [
     # Stability
     "compute_stability",
     "DEFAULT_STABILITY_PROMPTS",
+    # Benchmark
+    "apply_magnitude_pruning",
+    "apply_magnitude_pruning_all_layers",
+    "compute_magnitude_benchmark",
+    # Rapid adaptation
+    "compute_adaptation_rate",
+    # Noise robustness
+    "compute_noise_degradation",
+    # Relearn rate
+    "compute_weight_change",
 ]
