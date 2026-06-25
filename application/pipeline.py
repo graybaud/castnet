@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from application.extract_scores import ExtractScoresUseCase, ExtractResult
 from application.generate_masks import GenerateMasksUseCase, MaskResult
 from application.finetune import FinetuneUseCase, FinetuneResult
-from application.evaluate import EvaluateUseCase, EvalResult
+from application.evaluate import EvaluateModelUseCase, EvalResult
 
 
 @dataclass
@@ -23,7 +23,7 @@ class CastNetPipeline:
         extract_uc: ExtractScoresUseCase,
         mask_uc: GenerateMasksUseCase,
         finetune_uc: FinetuneUseCase | None = None,
-        evaluate_uc: EvaluateUseCase | None = None,
+        evaluate_uc: EvaluateModelUseCase | None = None,
     ):
         self.extract_uc = extract_uc
         self.mask_uc = mask_uc
