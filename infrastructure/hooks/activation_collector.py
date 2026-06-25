@@ -21,6 +21,11 @@ class ActivationCollector(ActivationProvider):
             if name in modules:
                 hook = modules[name].register_forward_hook(self._make_hook(name))
                 self._hooks.append(hook)
+            # Also try with dots replaced by underscores
+            alt_name = name.replace(".", "_")
+            if alt_name != name and alt_name in modules:
+                hook = modules[alt_name].register_forward_hook(self._make_hook(name))
+                self._hooks.append(hook)
 
     def detach(self) -> None:
         for hook in self._hooks:
@@ -29,8 +34,8 @@ class ActivationCollector(ActivationProvider):
 
     def _make_hook(self, name: str):
         def hook_fn(module, input, output):
-            x_in = input[0].detach()
-            x_out = output.detach()
+            x_in = input[0].detach().float()
+            x_out = output.detach().float()
             if x_in.dim() == 3:
                 x_in = x_in.reshape(-1, x_in.shape[-1])
             if x_out.dim() == 3:
@@ -40,7 +45,16 @@ class ActivationCollector(ActivationProvider):
         return hook_fn
 
     def get_input_activations(self, layer_name: str) -> torch.Tensor:
-        return self._inputs.get(layer_name)
+        # Try exact match first, then with underscores
+        result = self._inputs.get(layer_name)
+        if result is None:
+            alt_name = layer_name.replace(".", "_")
+            result = self._inputs.get(alt_name)
+        return result
 
     def get_output_activations(self, layer_name: str) -> torch.Tensor:
-        return self._outputs.get(layer_name)
+        result = self._outputs.get(layer_name)
+        if result is None:
+            alt_name = layer_name.replace(".", "_")
+            result = self._outputs.get(alt_name)
+        return result

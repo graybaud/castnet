@@ -1,13 +1,19 @@
-"""Adaptateur HuggingFace — Implemente WeightProvider."""
+"""HuggingFace adapter — Implements WeightProvider."""
 
+import os
 import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
 from domain.scoring.ports import WeightProvider
 
+# Disable HF Hub requests for faster loading
+os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+
 
 class HuggingFaceWeightProvider(WeightProvider):
-    """Fournit poids et gradients depuis un modele HuggingFace."""
+    """Provides weights and gradients from a HuggingFace model."""
 
     FFN_PATTERNS = [
         "fc1", "fc2", "c_fc", "c_proj",
@@ -16,13 +22,16 @@ class HuggingFaceWeightProvider(WeightProvider):
     ]
 
     def __init__(self, model_name: str, device: str = "cuda"):
+        # Force local files only — no network requests
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
             trust_remote_code=True,
             device_map="auto" if "cuda" in device else None,
+            local_files_only=True,  # ← NO NETWORK
         )
         self._device = device
+        self.model.train()  # Set training mode once
         self._ffn_layers = self._detect_ffn_layers()
         self._name_map = {n.replace(".", "_"): n for n in self._ffn_layers}
 
@@ -33,9 +42,7 @@ class HuggingFaceWeightProvider(WeightProvider):
     def _detect_ffn_layers(self) -> dict[str, nn.Module]:
         layers = {}
         for name, module in self.model.named_modules():
-            # Accepter nn.Linear ET Conv1D (vieux GPT-2)
-            if not isinstance(module, (nn.Linear,)):
-                # Verifier si c'est un Conv1D (pas dans nn, mais dans GPT2)
+            if not isinstance(module, nn.Linear):
                 if not hasattr(module, 'weight') or not hasattr(module, 'bias'):
                     continue
                 if module.weight.dim() != 2:
@@ -66,10 +73,10 @@ class HuggingFaceWeightProvider(WeightProvider):
         return w.grad.float() if w.grad is not None else None
 
     def layer_names(self) -> list[str]:
-        return [n.replace(".", "_") for n in self._ffn_layers.keys()]
+        return list(self._ffn_layers.keys())
 
     def forward_backward(self, batch: torch.Tensor) -> float:
-        self.model.train()
+        self.model.zero_grad()
         loss = self.model(batch, labels=batch).loss
         loss.backward()
         return loss.item()
