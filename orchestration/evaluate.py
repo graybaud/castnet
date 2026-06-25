@@ -32,24 +32,27 @@ def main(cfg: DictConfig):
 
     if cfg.mode == "dense":
         _run_dense(model, dataset, cfg)
-
     elif cfg.mode == "perplexity":
         _run_perplexity(model, dataset, mask_persister, cfg)
-
     elif cfg.mode == "sweep":
         _run_sweep(model, dataset, mask_persister, cfg)
-
     elif cfg.mode == "compare":
         _run_compare(model, dataset, mask_persister, cfg)
 
 
 def _run_dense(model, dataset, cfg):
     print("Dense baseline evaluation...")
+    model.model.eval()
     total_loss, total_tok = 0.0, 0
-    for batch in dataset.get_batches(cfg.num_batches):
-        loss = model.forward_backward(batch)
+    for i, batch in enumerate(dataset.get_batches(cfg.num_batches)):
+        batch = batch.to(model.model.device)
+        with torch.no_grad():
+            out = model.model(batch, labels=batch)
+            loss = out.loss.item()
         total_loss += loss * batch.numel()
         total_tok += batch.numel()
+        if (i + 1) % 10 == 0:
+            print(f"  Batch {i+1}/{cfg.num_batches}")
 
     from domain.metrics.perplexity import compute_perplexity_from_total
     perp = compute_perplexity_from_total(total_loss, total_tok)
@@ -87,18 +90,22 @@ def _run_sweep(model, dataset, mask_persister, cfg):
 
 
 def _run_compare(model, dataset, mask_persister, cfg):
-    # Dense baseline
     print("[1/2] Dense baseline...")
     total_loss, total_tok = 0.0, 0
-    for batch in dataset.get_batches(cfg.num_batches):
-        loss = model.forward_backward(batch)
+    model.model.eval()
+    for i, batch in enumerate(dataset.get_batches(cfg.num_batches)):
+        batch = batch.to(model.model.device)
+        with torch.no_grad():
+            out = model.model(batch, labels=batch)
+            loss = out.loss.item()
         total_loss += loss * batch.numel()
         total_tok += batch.numel()
+        if (i + 1) % 10 == 0:
+            print(f"  Batch {i+1}/{cfg.num_batches}")
 
     from domain.metrics.perplexity import compute_perplexity_from_total
     perp_dense = compute_perplexity_from_total(total_loss, total_tok)
 
-    # Sparse evaluation
     print("[2/2] Sparse evaluation...")
     use_case = EvaluateUseCase(model, dataset, mask_persister)
     result = use_case.execute(cfg.mask_path, num_batches=cfg.num_batches)

@@ -6,7 +6,7 @@ import torch
 
 from domain.scoring.strategies import get_strategy
 from infrastructure.models.huggingface import HuggingFaceWeightProvider
-from infrastructure.data.providers import WikiTextProvider
+from infrastructure.data.cached_provider import CachedWikiTextProvider
 from infrastructure.hooks.activation_collector import ActivationCollector
 from infrastructure.persistence.safetensors_persister import SafetensorsScorePersister
 from application.extract_scores import ExtractScoresUseCase
@@ -19,14 +19,10 @@ def main(cfg: DictConfig):
 
     # Infrastructure
     model = HuggingFaceWeightProvider(cfg.model, device)
-    dataset = WikiTextProvider(cfg.model, cfg.max_len)
+    dataset = CachedWikiTextProvider()
 
-    real_names = list(dict(model._model.named_modules()).keys())
-    ffn_names = [
-        n for n in real_names
-        if any(p in n.lower() for p in HuggingFaceWeightProvider.FFN_PATTERNS)
-    ]
-    collector = ActivationCollector(model._model, ffn_names)
+    ffn_names = list(model._ffn_layers.keys())
+    collector = ActivationCollector(model.model, ffn_names)
     persister = SafetensorsScorePersister()
 
     # Domain

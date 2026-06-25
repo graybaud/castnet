@@ -1,0 +1,6 @@
+- model=facebook/opt-125m
+- method=wanda
+- device=cuda
+- num_batches=10
+- max_len=128
+- output=reports/test_wanda.safetensors
