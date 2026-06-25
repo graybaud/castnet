@@ -86,8 +86,8 @@ APL_FORMULAS = {
     "fractal": "fractal_score",
 
     # GPS components standalone
-    "direction_only": "direction_standalone",
-    "selectivity_only": "selectivity_standalone",
+    "direction_only": "direction_per_neuron",
+    "selectivity_only": "selectivity",
     "distortion_only": "distortion_standalone",
 
     # Wanda/Gradient x Distortion

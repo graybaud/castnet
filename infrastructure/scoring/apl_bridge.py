@@ -32,6 +32,15 @@ class APLScoringBridge:
         layer_name: str,
     ) -> torch.Tensor:
         """Extract variables from providers, evaluate APL formula."""
+        # Resolve formula name to actual APL expression
+        formula = self.formula
+        try:
+            from domain.scorers import METHODS
+            if self.formula in METHODS:
+                formula = METHODS[self.formula]["formula"]
+        except ImportError:
+            pass  # Use formula string directly if METHODS not available
+        
         W = _to_numpy(weights.get_weight(layer_name))
         
         X_in = activations.get_input_activations(layer_name)
@@ -59,5 +68,5 @@ class APLScoringBridge:
             variables["grad"] = grad_np
 
         self.parser.set_variables(**variables)
-        result = self.parser.evaluate(self.formula)
+        result = self.parser.evaluate(formula)
         return _to_torch(result)
