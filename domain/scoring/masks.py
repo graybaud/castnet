@@ -1,4 +1,4 @@
-"""Binary mask generation — Pure domain logic."""
+"""Binary mask generation and sparsity measurement — Pure domain logic."""
 
 import torch
 from torch import Tensor
@@ -20,10 +20,7 @@ def apply_percentile_mask(scores: Tensor, keep_fraction: float) -> Tensor:
     return (scores >= threshold).float()
 
 
-def apply_masks_to_weights(
-    masks: dict[str, Tensor],
-    weight_provider,
-) -> None:
+def apply_masks_to_weights(masks: dict[str, Tensor], weight_provider) -> None:
     """Applies masks to weights (in-place multiplication)."""
     for name, mask in masks.items():
         W = weight_provider.get_weight(name)
@@ -51,17 +48,31 @@ def count_sparsity(masks: dict[str, Tensor]) -> dict:
         "per_layer": per_layer,
     }
 
-def normalize_scores(score_accum, num_batches, needs_batch_div=True):
-    """Normalize scores to [0, 1] per layer.
-    
-    Args:
-        score_accum: dict of layer_name -> score_tensor
-        num_batches: number of batches used for accumulation
-        needs_batch_div: if True, divide by num_batches before normalizing
-    
-    Returns:
-        Same dict with scores normalized in-place.
+
+def measure_sparsity(model) -> tuple:
+    """Count nodes, edges, total connections, and sparsity % in FFN layers.
+
+    Kept for backward compatibility with legacy tests.
+    Uses the same logic as the original src/evaluation/sparsity.py.
     """
+    import torch.nn as nn
+    from infrastructure.models.huggingface import HuggingFaceWeightProvider
+
+    nodes, edges, total = 0, 0, 0
+    for name, module in model.named_modules():
+        if isinstance(module, nn.Linear):
+            name_lower = name.lower()
+            if any(p in name_lower for p in HuggingFaceWeightProvider.FFN_PATTERNS):
+                w = module.weight.data
+                nodes += w.shape[0] + w.shape[1]
+                edges += (w != 0).sum().item()
+                total += w.numel()
+    sp = (1 - edges / total) * 100 if total > 0 else 0
+    return nodes, edges, total, sp
+
+
+def normalize_scores(score_accum, num_batches, needs_batch_div=True):
+    """Normalize scores to [0, 1] per layer."""
     for name in score_accum:
         if needs_batch_div:
             score_accum[name] = score_accum[name] / num_batches
@@ -70,4 +81,3 @@ def normalize_scores(score_accum, num_batches, needs_batch_div=True):
         if s_max > 0:
             score_accum[name] = s / s_max
     return score_accum
-

@@ -83,3 +83,16 @@ class HuggingFaceWeightProvider(WeightProvider):
 
     def zero_grad(self) -> None:
         self.model.zero_grad()
+
+    def save_ffn_weights(self) -> dict:
+        """Save a deep copy of all FFN weights for later restoration."""
+        import torch
+        return {
+            name: self.get_weight(name).clone()
+            for name in self.layer_names()
+        }
+
+    def restore_ffn_weights(self, saved: dict) -> None:
+        """Restore FFN weights from a previously saved copy."""
+        for name, w in saved.items():
+            self.get_weight(name).data.copy_(w)
