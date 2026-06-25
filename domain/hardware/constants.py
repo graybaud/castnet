@@ -23,3 +23,5 @@ T_AMBIENT = 25.0
 DEFECT_DENSITY = {"130nm": 0.3, "180nm": 0.2, "350nm": 0.15, "500nm": 0.1, "1um": 0.05}
 CLUSTERING_ALPHA = {"130nm": 1.0, "180nm": 0.8, "350nm": 0.6, "500nm": 0.5, "1um": 0.4}
 WAFER_DIAMETER_MM = 200
+
+TRANSISTORS_PER_EDGE = 0
