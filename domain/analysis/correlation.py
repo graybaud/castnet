@@ -1,10 +1,10 @@
 """Correlation and orthogonality analysis — Pure domain logic."""
 
 import math
-from typing import Optional
+import torch
 
 
-def pearson_correlation(x: list[float], y: list[float]) -> float:
+def pearson_correlation(x, y):
     if len(x) < 2 or len(y) < 2:
         return 0.0
     mx = sum(x) / len(x)
@@ -17,16 +17,28 @@ def pearson_correlation(x: list[float], y: list[float]) -> float:
     return num / (dx * dy)
 
 
-def mask_overlap(m1: dict[int, float], m2: dict[int, float]) -> float:
+def mask_overlap(m1, m2):
+    """Compute Jaccard overlap between two masks.
+
+    Works with:
+    - dict[int, float] (per-neuron)
+    - dict[str, Tensor] (per-layer 2D masks)
+    """
+    # Per-layer 2D masks
+    if isinstance(next(iter(m1.values())), torch.Tensor):
+        inter = sum((m1[n] * m2[n]).sum().item() for n in m1 if n in m2)
+        union = sum(m1[n].sum().item() for n in m1)
+        return inter / union if union > 0 else 0.0
+
+    # Per-neuron scalar dict
     inter = sum(m1.get(i, 0.0) * m2.get(i, 0.0) for i in set(m1) | set(m2))
     union = sum(m1.values())
+    if isinstance(union, torch.Tensor):
+        union = union.sum().item()
     return inter / union if union > 0 else 0.0
 
 
-def overlap_matrix(
-    masks: dict[str, dict[int, float]],
-    method_names: Optional[list[str]] = None,
-) -> list[list[float]]:
+def overlap_matrix(masks, method_names=None):
     if method_names is None:
         method_names = sorted(masks.keys())
     n = len(method_names)
@@ -40,13 +52,13 @@ def overlap_matrix(
     return matrix
 
 
-def interpret_correlation(r: float) -> str:
+def interpret_correlation(r):
     a = abs(r)
     if a < 0.3: return "ORTHOGONAL"
     if a < 0.5: return "PARTIALLY CORRELATED"
     return "HIGHLY CORRELATED"
 
 
-def orthogonality_score(overlaps: list[float]) -> float:
+def orthogonality_score(overlaps):
     if not overlaps: return 100.0
     return (1.0 - sum(overlaps) / len(overlaps)) * 100.0
