@@ -16,6 +16,18 @@ from domain.metrics.dead_neurons import (
     count_dead_neurons_all_layers,
 )
 from domain.metrics.weight_distribution import analyze_weight_distribution
+from domain.metrics.kl_divergence import (
+    compute_kl_divergence,
+    compute_kl_divergence_batched,
+)
+from domain.metrics.topk_rank import (
+    topk_overlap,
+    topk_overlap_batched,
+)
+from domain.metrics.stability import (
+    compute_stability,
+    DEFAULT_STABILITY_PROMPTS,
+)
 
 __all__ = [
     # Perplexity
@@ -32,4 +44,13 @@ __all__ = [
     "count_dead_neurons_all_layers",
     # Weight distribution
     "analyze_weight_distribution",
+    # KL Divergence
+    "compute_kl_divergence",
+    "compute_kl_divergence_batched",
+    # Top-K Rank
+    "topk_overlap",
+    "topk_overlap_batched",
+    # Stability
+    "compute_stability",
+    "DEFAULT_STABILITY_PROMPTS",
 ]
