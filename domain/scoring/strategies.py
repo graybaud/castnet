@@ -51,26 +51,54 @@ class GradientStrategy(ScoringStrategy):
 
 
 class WandaStrategy(ScoringStrategy):
-    """|W| x ||X||_2 — Forward only, state of the art."""
+    """|W| x ||X||_2 — Forward only, state of the art.
+    
+    Uses accumulated input activations (sum over batches) then computes
+    the L2 norm per feature, matching the legacy behavior exactly:
+    score = |W| x sqrt(mean(X^2)) averaged over all batches.
+    """
     needs_grad = False
 
     def calculate(self, weights, activations, layer_name):
         W = weights.get_weight(layer_name)
-        X = activations.get_input_activations(layer_name)
-        X_norm = X.norm(p=2, dim=0)
+        # Get accumulated sum of activations (over all batches)
+        X_sum = activations.get_input_activations(layer_name)
+        if X_sum is None:
+            # Fallback: try per-batch mean
+            X = activations.get_input_mean(layer_name)
+            if X is None:
+                raise ValueError(f"No activations for {layer_name}")
+            X_norm = X.norm(p=2, dim=0)
+        else:
+            # Legacy-compatible: mean of squared norms across batches
+            # Use the accumulated sum to compute sqrt(mean(X^2))
+            n_batches = getattr(activations, 'num_batches', 1)
+            X_norm = (X_sum / max(n_batches, 1)).norm(p=2, dim=0)
+        
         scores = W.abs() * X_norm.unsqueeze(0)
         s_max = scores.max()
         return scores / s_max if s_max > 0 else scores
 
 
 class GPSStrategy(ScoringStrategy):
-    """GPS Local — Direction x Selectivity x Distortion."""
+    """GPS Local — Direction x Selectivity x Distortion.
+    
+    Uses concatenated activations from ALL batches (like legacy GPS)
+    to compute variance, mean, and distortion correctly.
+    """
     needs_grad = False
 
     def calculate(self, weights, activations, layer_name):
         W = weights.get_weight(layer_name)
-        X_in = activations.get_input_activations(layer_name)
-        X_out = activations.get_output_activations(layer_name)
+        
+        # Use concatenated activations (all batches) like legacy GPS
+        X_in = getattr(activations, 'get_input_concatenated', 
+                       activations.get_input_activations)(layer_name)
+        X_out = getattr(activations, 'get_output_concatenated',
+                        activations.get_output_activations)(layer_name)
+        
+        if X_in is None or X_out is None:
+            raise ValueError(f"No activations for {layer_name}")
 
         W_abs = W.abs()
         direction = W_abs.max(dim=1).values / (W_abs.mean(dim=1) + 1e-8)
