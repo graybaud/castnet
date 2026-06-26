@@ -16,8 +16,15 @@ from application.pipeline import CastNetPipeline
 
 
 class FakeWeightProvider(WeightProvider):
+    def __call__(self, batch, labels=None):
+        """Make FakeWeightProvider callable like a model."""
+        import torch.nn.functional as F
+        logits = batch.float().mean(dim=1, keepdim=True).expand(-1, 1000)
+        loss = F.cross_entropy(logits, torch.zeros(batch.size(0), dtype=torch.long))
+        return type('obj', (), {'loss': loss})()
     def __init__(self, W):
         self._W = W
+        self.model = self  # Needed by extract_scores for forward pass
     def get_weight(self, name): return self._W
     def get_bias(self, name): return torch.zeros(self._W.shape[0])
     def get_gradient(self, name): return torch.randn_like(self._W)

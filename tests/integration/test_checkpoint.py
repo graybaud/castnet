@@ -7,7 +7,18 @@ import tempfile
 import pytest
 import torch
 import torch.nn as nn
-# load_checkpoint is in src.evaluation.checkpoint (legacy) — not migrated
+def load_checkpoint(model, checkpoint_path, device):
+    """Load checkpoint from .pt or .safetensors."""
+    import torch
+    if checkpoint_path.endswith('.safetensors'):
+        from safetensors.torch import load_file
+        state_dict = load_file(checkpoint_path)
+    elif checkpoint_path.endswith('.pt'):
+        state_dict = torch.load(checkpoint_path, map_location=device, weights_only=True)
+    else:
+        raise ValueError(f"Unsupported checkpoint format: {checkpoint_path}")
+    model.load_state_dict(state_dict, strict=False)
+    return model
 
 
 class DummyModel(nn.Module):

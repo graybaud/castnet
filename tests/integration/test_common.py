@@ -24,7 +24,7 @@ def test_apply_percentile_mask_empty():
 
 
 def test_pearson_perfect():
-    assert pearson_correlation([1, 2, 3, 4], [1, 2, 3, 4]) == 1.0
+    assert abs(pearson_correlation([1, 2, 3, 4], [1, 2, 3, 4]) - 1.0) < 1e-10
 
 
 def test_pearson_uncorrelated():

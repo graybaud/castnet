@@ -39,7 +39,7 @@ class TestEvaluationIntegration:
         backup = {k: v.clone() for k, v in ffn_weights.items()}
 
         # Prune
-        pruned, sparsities = apply_magnitude_pruning_all_layers(ffn_weights, threshold=0.05)
+        pruned, sparsities = apply_magnitude_pruning_all_layers(ffn_weights, threshold=0.5)
         _, pruned_edges, _, _ = measure_sparsity_from_weights(pruned)
 
         assert pruned_edges <= original_edges

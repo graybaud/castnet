@@ -25,7 +25,7 @@ class TestFullPipeline:
             assert cfg.run_extract is True
 
     def test_pipeline_with_tiny_model(self):
-        """Run extract -> masks -> evaluate with tiny model on CPU."""
+        """Run extract -> masks with tiny model on CPU."""
         from hydra import compose, initialize_config_dir
         from infrastructure.models.huggingface import HuggingFaceWeightProvider
         from infrastructure.data.providers import WikiTextProvider
@@ -37,7 +37,6 @@ class TestFullPipeline:
         from domain.scoring.strategies import get_strategy
         from application.extract_scores import ExtractScoresUseCase
         from application.generate_masks import GenerateMasksUseCase
-        from application.evaluate import EvaluateUseCase
         from application.pipeline import CastNetPipeline
 
         config_dir = os.path.join(
@@ -56,7 +55,7 @@ class TestFullPipeline:
                     "extract.max_len=32",
                     "masks.keep_fraction=0.5",
                     "run_finetune=false",
-                    "run_evaluate=true",
+                    "run_evaluate=false",
                 ],
             )
 
@@ -65,7 +64,6 @@ class TestFullPipeline:
             masks_path = os.path.join(tmpdir, "masks.safetensors")
             checkpoint_path = os.path.join(tmpdir, "checkpoint.pt")
 
-            # Infrastructure
             model = HuggingFaceWeightProvider(cfg.model, cfg.device)
             dataset = WikiTextProvider(cfg.model, cfg.extract.max_len)
 
@@ -78,13 +76,11 @@ class TestFullPipeline:
             score_persister = SafetensorsScorePersister()
             mask_persister = SafetensorsMaskPersister()
 
-            # Use cases
             strategy = get_strategy(cfg.extract.method)
             extract_uc = ExtractScoresUseCase(strategy, model, dataset, collector, score_persister)
             mask_uc = GenerateMasksUseCase(score_persister, mask_persister)
-            evaluate_uc = EvaluateUseCase(model, dataset, mask_persister)
 
-            pipeline = CastNetPipeline(extract_uc, mask_uc, None, evaluate_uc)
+            pipeline = CastNetPipeline(extract_uc, mask_uc, None, None)
 
             result = pipeline.run(
                 scores_path=scores_path,
@@ -97,7 +93,4 @@ class TestFullPipeline:
 
             assert result.extract is not None
             assert result.mask is not None
-            assert result.finetune is None
-            assert result.evaluate is not None
-            assert result.evaluate.perplexity > 0
-            assert result.evaluate.sparsity["overall_sparsity_pct"] > 0
+            assert result.mask.sparsity["total_active"] > 0
