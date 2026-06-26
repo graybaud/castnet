@@ -53,28 +53,20 @@ class GradientStrategy(ScoringStrategy):
 class WandaStrategy(ScoringStrategy):
     """|W| x ||X||_2 — Forward only, state of the art.
     
-    Uses accumulated input activations (sum over batches) then computes
-    the L2 norm per feature, matching the legacy behavior exactly:
-    score = |W| x sqrt(mean(X^2)) averaged over all batches.
+    Receives concatenated activations from all batches.
+    Computes score = |W| x ||X||_2 once (like legacy).
     """
     needs_grad = False
 
     def calculate(self, weights, activations, layer_name):
         W = weights.get_weight(layer_name)
-        # Get accumulated sum of activations (over all batches)
-        X_sum = activations.get_input_activations(layer_name)
-        if X_sum is None:
-            # Fallback: try per-batch mean
-            X = activations.get_input_mean(layer_name)
-            if X is None:
-                raise ValueError(f"No activations for {layer_name}")
-            X_norm = X.norm(p=2, dim=0)
-        else:
-            # Legacy-compatible: mean of squared norms across batches
-            # Use the accumulated sum to compute sqrt(mean(X^2))
-            n_batches = getattr(activations, 'num_batches', 1)
-            X_norm = (X_sum / max(n_batches, 1)).norm(p=2, dim=0)
-        
+        # Get concatenated activations from all batches
+        X = getattr(activations, 'get_input_concatenated',
+                    activations.get_input_activations)(layer_name)
+        if X is None:
+            raise ValueError(f"No activations for {layer_name}")
+        # ||X||_2 per input feature (like legacy)
+        X_norm = X.norm(p=2, dim=0)
         scores = W.abs() * X_norm.unsqueeze(0)
         s_max = scores.max()
         return scores / s_max if s_max > 0 else scores
