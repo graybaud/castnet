@@ -1,4 +1,4 @@
-"""CastNet Scoring Infrastructure — All accumulators + APL Bridge (lazy)."""
+"""CastNet Scoring Infrastructure — Accumulators + APL Bridge (lazy)."""
 
 from infrastructure.scoring.accumulators import (
     accumulate_gradient_scores,
@@ -8,10 +8,7 @@ from infrastructure.scoring.accumulators import (
     accumulate_wanda_chain_scores,
     accumulate_softmax_gradient_scores,
     accumulate_weighted_softmax_scores,
-    accumulate_sparsegps_scores,
-    accumulate_sparsegpt_scores,
-    accumulate_gcs_scores,
-    accumulate_trident_scores,
+    accumulate_apl_scores,
 )
 
 __all__ = [
@@ -22,10 +19,7 @@ __all__ = [
     "accumulate_wanda_chain_scores",
     "accumulate_softmax_gradient_scores",
     "accumulate_weighted_softmax_scores",
-    "accumulate_sparsegps_scores",
-    "accumulate_sparsegpt_scores",
-    "accumulate_gcs_scores",
-    "accumulate_trident_scores",
+    "accumulate_apl_scores",
     "get_apl_bridge",
 ]
 
