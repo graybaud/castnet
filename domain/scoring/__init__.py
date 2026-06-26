@@ -16,6 +16,7 @@ from domain.scoring.strategies import (
     STRATEGY_REGISTRY,
     get_strategy,
 )
+from domain.scoring.diagnose import diagnose_scores
 from domain.scoring.masks import (
     apply_percentile_mask,
     apply_masks_to_weights,
@@ -38,6 +39,7 @@ __all__ = [
     "STRATEGY_REGISTRY",
     "get_strategy",
     # Masks
+    "diagnose_scores",
     "apply_percentile_mask",
     "apply_masks_to_weights",
     "count_sparsity",
